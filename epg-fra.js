@@ -45,10 +45,11 @@ const path = require("path");
 
 //will add to separate file later...
 let channelIds = ["ct1", "ct2", "ct24", "ctdecko", "ctart", "ct4sport", "nova", "novacinema", "fanda", "smichov", "nova_lady", "telka", "primafamily", "primacool", "prima_max", "primalove", "prima_krimi", "prima_show", "prima_star", "primazoom", "prima_news", "primacomedy", "barrandov", "barrandovplus", "kinobarrandov", "Seznam", "jojfamily", "nova_lady"]
-//const channelIds = ["ctdecko", "primafamily"]
-//const channelIds = ["fanda"]
+//channelIds = ["ctdecko"]
+//channelIds = ["fanda"]
 //channelIds = ["primacomedy"];
 //channelIds = ["ct24"]
+//channelIds = ["ct1", "ct2", "ct24", "ctdecko", "ctart", "ct4sport"]
 const channelsCTMap = {
   "ct1": "ct1",
   "ct2": "ct2",
@@ -114,7 +115,7 @@ axios.get(`http://felixtv.wz.cz/epg/stv.php?ch=${channel}&d=${date}`)
     let startTime = new Date();
     log.info(`Channels: ${channelIds.length}`);
     log.info(`Days: ${days}`)
-    log.info(`Days back: ${daysBack}\n`)
+    log.info(`Days back: ${daysBack}\n`);
     await cleanCache(); //we clean cache files first...
     //add header to xml
     const xml = new XmlTv({
@@ -202,7 +203,7 @@ axios.get(`http://felixtv.wz.cz/epg/stv.php?ch=${channel}&d=${date}`)
           let programme = programmes[i];
           //if ("ctdecko" in k or "ctart" in k) and ("Přestávka ve vysílání" in title):
           if ((channel.id == `ctdecko` || channel.id == `ctart`) && programme.title.includes('Přestávka ve vysílání')){
-            //we do not want to add this programme...
+            //we do not want to add this programme, because we merge these 2 epgs in tvheadend...
             continue;
           }
           //let stvProgSoup = await get stvProgSoup(programme.eventId);
@@ -211,7 +212,6 @@ axios.get(`http://felixtv.wz.cz/epg/stv.php?ch=${channel}&d=${date}`)
             CSTVInfo = await grabCSTV(CSTVSoup, programme);
           }
           
-
           let infoCSFD = await getProgrammeExtendedInfo(programme) || false;
           //map genres
           let genresCZ = infoCSFD.genres || [];
@@ -667,12 +667,12 @@ async function getStvGenres(_soup){
       //we need to get genres only
       
       for (let j in objecsArrayClear){
-        if (objecsArrayClear[j] == "/" && !genresArray.includes(objecsArrayClear[j-1])){
-          //we add a genre that is in previous element if not already there
+        if (objecsArrayClear[j] == "/" && !genresArray.includes(objecsArrayClear[j-1]) && isNaN(objecsArrayClear[j-1])){
+          //we add a genre that is in previous element if not already there, it must not be a number
           genresArray.push(objecsArrayClear[j-1]);
         }
-        if (objecsArrayClear.length-1 == j && !genresArray.includes(objecsArrayClear[j])){
-          //we add the last element as well if not already there...
+        if (objecsArrayClear.length-1 == j && !genresArray.includes(objecsArrayClear[j]) && isNaN(objecsArrayClear[j])){
+          //we add the last element as well if not already there, it must not be a number
           genresArray.push(objecsArrayClear[j]);
         }
       }
@@ -683,6 +683,10 @@ async function getStvGenres(_soup){
         //  csfdProgUrl = atrs.href;
         //}
   }
+  //log.debug("XXX", genresArray);
+  //for (let i in genresArray){
+  //  log.debug(`${genresArray[i]}/${isNaN(genresArray[i])}`)
+  //}
   return(genresArray);
 }
 
@@ -849,6 +853,13 @@ async function getTZString(_timeshift){
 }
 
 async function cleanCache(){
+  //create cache dir if it doesnt exist
+  //var fs = require('fs');
+//var dir = './tmp';
+
+  if (!fs.existsSync(cacheFolder)){
+      fs.mkdirSync(cacheFolder);
+  }
   let daysToClean = days + daysBack;
     let seconds = daysToClean * 60 * 60 * 24; //we convert cache days to seconds...
     //seconds = seconds/24;//!!!!just for test purposes
@@ -906,6 +917,7 @@ async function mapGenres(_genresCZ){
 }
 
 async function grabCSTV(_soup, _programme){
+  let genresMapFile = await JSON.parse(fs.readFileSync('./genres.json'));
   let time = _programme.startTime.split(" ")[1]; //we parse the hh:mm
   let title = _programme.title;
   var programmes = _soup.findAll("porad");
@@ -922,6 +934,10 @@ async function grabCSTV(_soup, _programme){
       rating: programme.find("labeling").contents[0]?._text || null,
       poster: programme.find("nahled").contents[0]?._text || null,
       description: programme.find("noticka").contents[0]?._text || null
+    };
+    //remove genres if not genres
+    if (genresMapFile.blacklisted.includes(pObject?.genre)){
+      pObject.genre = null;
     }
     if (pObject.title.toLowerCase() == title.toLowerCase() && pObject.time == time){
       CSTVInfo = pObject;
