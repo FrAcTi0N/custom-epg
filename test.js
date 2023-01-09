@@ -14,8 +14,9 @@ main()
 
 async function main(){
 	//sms();
-	grabCsfd();
+	//grabCsfd();
 	//grabCSTV();
+	checkDST();
 	return;
 	}
 
@@ -239,6 +240,7 @@ async function grabCSTV(){
 		//return;
 		
 	}
+}
 	
 	//console.log(response.data);
 	//let channelXmlParsed = parse5.parse(response.data);
@@ -255,6 +257,38 @@ async function grabCSTV(){
 		//}
 
 	//}
-}
+
+	async function checkDST(){
+
+		/* @return A timezone offset in minutes */
+		const getOffset = (timeZone = 'UTC', date = new Date()) => {
+		  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+		  const tzDate = new Date(date.toLocaleString('en-US', { timeZone }));
+		  return (tzDate.getTime() - utcDate.getTime()) / (6e4 * 60);
+		}
+
+		console.log(`No arguments: ${getOffset()}`); // 0
+
+		{
+		  console.log('! Test Case #1 >> Now');
+		  console.log(`Europe/Prague     : ${getOffset('Europe/Prague')}`);     //  330
+		  console.log(`America/New_York : ${getOffset('America/New_York')}`); // -240
+		}
+
+		{
+		  console.log('! Test Case #2 >> DST : off');
+		  const date = new Date(2021, 0, 1);
+		  console.log(`Europe/Prague     : ${getOffset('Europe/Prague', date)}`);     //  330
+		  console.log(`America/New_York : ${getOffset('America/New_York', date)}`); // -300
+		}
+
+		{
+		  console.log('! Test Case #3 >> DST : on');
+		  const date = new Date(2021, 5, 1);
+		  console.log(`Europe/Prague     : ${getOffset('Europe/Prague', date)}`);     //  330
+		  console.log(`America/New_York : ${getOffset('America/New_York', date)}`); // -240
+		}
+	}
+		
 
 
