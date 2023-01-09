@@ -138,7 +138,7 @@ main();
       let tzString = await getTZString(timeshift);
       dayDiff++;//we add plus one for next loop...
       //log.info(`\n\n${dateString}`);
-      process.stdout.write(`\n\n${dateString} / offset ${offsetType}${timeshift} hour(s)`);
+      process.stdout.write(`\n\n${dateString} / offset ${offsetType}${timeshift} hour(s) / day ${x+1}/${dayLoops}`);
       //we loop throug all channels
       for (let i in channels){
         channel = channels[i];
