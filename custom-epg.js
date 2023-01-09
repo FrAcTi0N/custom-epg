@@ -25,26 +25,23 @@ rating
 
 //XMLTV Grabbed from https://gitlab.com/jonohill/xmltv-skynz/-/blob/master/xmltv.js
 const axios = require('axios');
-const prettify = require('html-prettify');
+//const prettify = require('html-prettify');
 var JSSoup = require('jssoup').default;
 const {csfd} = require("node-csfd-api");
-var convert = require('xml-js');
+//var convert = require('xml-js');
 const XmlTv = require('./packages/xmltv');
 //const fs = require("fs");
 const Cache = require('file-system-cache').default
 const cache = Cache({
   basePath: "./cache" // Optional. Path where cache files are stored (default).
 });
-//clear cache
-//import * as fs from 'node:fs/promises';
-//const fs = require("fs/promises")
+const config = require('config');
 const fs = require(`fs`)
-//import path from 'path';
 const path = require("path");
 
 
-//will add to separate file later...
-let channelIds = ["ct1", "ct2", "ct24", "ctdecko", "ctart", "ct4sport", "nova", "novacinema", "fanda", "smichov", "nova_lady", "telka", "primafamily", "primacool", "prima_max", "primalove", "prima_krimi", "prima_show", "prima_star", "primazoom", "prima_news", "primacomedy", "barrandov", "barrandovplus", "kinobarrandov", "Seznam", "jojfamily", "nova_lady"]
+//Load seetings from ./config/default.toml
+let channelIds = config.get(`channelIds`)
 //channelIds = ["ctdecko"]
 //channelIds = ["fanda"]
 //channelIds = ["primacomedy"];
@@ -59,56 +56,22 @@ const channelsCTMap = {
   "ct4sport": "ct4"
 }
 
-const channelsPlusOne = ["primafamily"]
-//stv_channels = {"ct1": "ČT1", "ct2": "ČT2", "ct3": "ČT3", "ct24": "ČT24", "ctdecko": "Déčko", "ctart": "ČT art", "ct4sport": "ČT Sport", "nova": "Nova", "novacinema": "Nova Cinema", "fanda": "Nova Action", "smichov": "Nova Fun", "nova_lady": "Nova Lady", "telka": "Nova Gold", "primafamily": "Prima", "primacool": "Prima COOL", "prima_max": "Prima Max", "primalove": "Prima Love", "prima_krimi": "Prima Krimi", "prima_show": "Prima Show", "prima_star": "Prima Star", "primazoom": "Prima Zoom", "prima_news": "CNN Prima News", "primacomedy": "Paramount Network", "barrandov": "TV Barrandov", "barrandovplus": "Barrandov Krimi", "kinobarrandov": "Kino Barrandov", "Seznam": "Televize Seznam", "pohoda": "Relax", "tvnoe": "TV Noe", "stv1": "Jednotka", "stv2": "Dvojka", "stv3": "Trojka", "markizaint": "Markíza International", "jojfamily": "JOJ Family", "ta3": "TA3", "tv_lux": "TV Lux", "TVlife": "Life TV", "HBO": "HBO", "HBO2": "HBO 2", "hbo_comedy": "HBO 3", "cinemax1": "Cinemax 1", "cinemax2": "Cinemax 2", "jojcinema": "JOJ Cinema", "amc": "AMC", "film_plus": "Film+", "filmbox": "FilmBox", "FilmboxHD": "Filmbox Extra HD", "FilmboxExtra": "FilmBox Premium", "filmboxplus": "Filmbox Stars", "FilmboxFamily": "FilmBox Family", "FilmboxArthouse": "Filmbox Arthouse", "Film_Europe": "Film Europe", "Kino_CS": "Film Europe + HD", "axn": "AXN", "axnwhite": "AXN White", "axnblack": "AXN Black", "cs_film": "CS Film", "horor_film": "CS Horror", "haha_tv": "HaHa TV", "spektrum": "Spektrum", "NGC_HD": "National Geographic HD", "nat_geo_wild": "National Geographic Wild", "animal_planet": "Animal Planet", "Discovery": "Discovery", "Science": "Discovery Science", "world": "Discovery Turbo Xtra", "ID": "Investigation Discovery", "TLC": "Discovery : TLC", "sat_crime_invest": "Crime and Investigation", "history": "History Channel", "viasat_explore": "Viasat Explore", "viasat_history": "Viasat History", "viasat_nature": "Viasat Nature", "love_nature": "Love Nature", "travelxp": "Travelxp", "travelhd": "Travel Channel HD", "fishinghunting": "Fishing&Hunting", "kinosvet": "CS Mystery", "war": "CS History", "tv_paprika": "TV Paprika", "mnamtv": "TV Mňam", "hobby": "Hobby TV", "natura": "TV Natura", "DocuBoxHD": "DocuBox", "FashionboxHD": "FashionBox", "nasatv": "NASA TV", "nasatv_uhd": "NASA TV UHD", "Eurosport": "Eurosport", "Eurosport2": "Eurosport2", "Sport1": "Sport1", "Sport2": "Sport2", "nova_sport": "Nova Sport 1", "nova_sport2": "Nova Sport 2", "slovak_sport": "Arena sport 1", "slovak_sport2": "Arena sport 2", "sport5": "Sport 5", "auto_motor_sport": "Auto Motor Sport", "golf": "Golf Channel", "FightboxHD": "FightBox", "chucktv": "Chuck TV", "Fastnfunbox": "Fast & Fun Box", "lala_tv": "Lala TV", "rik2": "Rik", "Jim_Jam": "Jim Jam", "Nickelodeon": "Nickelodeon", "nicktoons": "Nicktoons", "nickjr": "Nick JR", "nick_jr_en": "Nick JR EN", "Minimax": "Minimax", "Disney_Channel": "Disney Channel", "disney_junior": "Disney Junior", "cartoon_cz": "Cartoon Network CZ", "cartoon_network_hd": "Cartoon Network HD", "cartoon": "Cartoon Network EN", "boomerang": "Boomerang", "baby_tv": "Baby TV", "ockoHD": "Óčko HD", "ocko_starHD": "Óčko STAR HD", "ocko_expresHD": "Óčko EXPRES HD", "ocko_blackHD": "Óčko BLACK HD", "retro": "Retro", "rebel": "Rebel", "mtv": "MTV", "mtv_hits": "MTV Hits", "360TuneBox": "360TuneBox", "deluxe": "Deluxe Music", "lounge": "Lounge TV", "i_concerts": "iConcerts", "mezzo": "Mezzo", "mezzo_live": "Mezzo Live HD", "slagr": "Šláger Originál", "slagr2": "Šláger Muzika", "slagr_premium": "Šláger Premium HD", "ct1sm": "ČT1 SM", "ct1jm": "ČT1 JM", "regiotv": "regionalnitelevize.cz", "rt_jc": "Regionální televize jižní Čechy", "rt_ustecko": "RT Ústecko", "praha": "TV Praha", "brno1": "TV Brno 1", "info_tv_brno": "Info TV Brno a jižní morava", "Polar": "Polar", "slovacko": "TVS", "v1tv": "V1 TV", "plzen_tv": "Plzeň TV", "zaktv": "ZAK TV", "kladno": "Kladno.1 TV", "filmpro": "Filmpro", "rtm_plus_liberec": "RTM+ (Liberecko)", "orf1": "ORF eins", "orf2": "ORF zwei", "cnn": "CNN", "sky_news": "Sky News", "bbc": "BBC World", "france24": "France 24", "france24_fr": "France 24 (FR)", "tv5": "TV5MONDE", "russiatoday": "Russia Today", "rt_doc": "RT Documentary", "uatv": "UA TV", "mnau": "TV Mňau", "zoo_brno_a_vesnice": "Zoo Brno - Africká vesnice", "zoo_brno_m_kamcatsky": "Zoo Brno - Medvěd kamčatský", "zoo_brno_m_ledni": "Zoo Brno - Medvěd lední", "komentovana_krmeni": "Zoo Brno - Komentovaná krmení", "zvirata_v_zoo": "Zoo Brno - Život v zoo", "loop_naturetv-galerie-zvirat": "Galerie zvířat", "loop_naturetv-osetrovani-mladat": "Ošetřování mláďat", "uscenes_cat_cafe": "Kočičí kavárna", "stork_nest": "Čapí hnízdo", "uscenes_hammock_beach": "Pláž", "uscenes_coral_garden": "Korálová zahrada", "loop_naturetv_mumlava_waterfalls": "Mumlavské vodopády", "night_prague": "Noční Praha", "fireplace": "Krb", "eroxHD": "Erox", "eroxxxHD": "Eroxxx", "leo_gold": "Leo TV Gold", "extasy_4k": "Extasy 4K", "radio_cro1": "ČRo Radiožurnál", "radio_cro2": "ČRo Dvojka", "radio_wave": "ČRo Radio Wave", "radio_evropa2": "Evropa 2", "radio_impuls": "Impuls", "radio_frekvence1": "Frekvence 1", "radio_kiss": "Kiss", "radio_fajn": "Fajn Radio", "radio_orlicko": "Rádio Orlicko", "radio_krokodyl": "Krokodýl", "radio_cernahora": "Černá Hora", "radio_signal": "Signál rádio", "radio_spin": "Rádio Spin", "radio_country": "Rádio Country", "radio_beat": "Rádio BEAT", "radio_1": "Rádio 1", "radio_dychovka": "Radio Dychovka", "radio_dechovka": "Radio Dechovka", "radio_slovensko": "Rádio Slovensko", "radio_fm": "Rádio FM", "radio_regina_sk": "Rádio Regina Západ", "radio_expres": "Rádio Expres", "radio_fun": "Rádio Fun", "radio_jemne": "Rádio Jemné", "radio_vlna": "Rádio Vlna", "radio_bestfm": "Rádio Best FM", "radio_kosice": "Rádio Košice", "radio_wow_sk": "Radio WOW", "radio_lumen": "Rádio Lumen", "radio_regina_vy": "Rádia Regina Východ", "radio_devin": "Rádio Devín", "radio_patria": "Rádio Patria", "radio_fit_family": "Fit family rádio", "radio_nonstop": "NON-STOP rádio", "radio_cro3": "ČRo Vltava", "radio_cro6": "ČRo Plus", "radio_jazz": "ČRo Jazz", "radio_junior": "ČRo Junior", "radio_ddur": "ČRo D-Dur", "radio_brno": "ČRo Brno", "radio_praha": "ČRo Radio Praha", "radio_ceskebudejovice": "ČRo České Budějovice", "radio_hk": "ČRo Hradec Králové", "radio_olomouc": "ČRo Olomouc", "radio_ostrava": "ČRo Ostrava", "radio_pardubice": "ČRo Pardubice", "radio_plzen": "ČRo Plzeň", "radio_region": "ČRo Region - Středočeský kraj", "radio_vysocina": "ČRo Region - Vysočina", "radio_sever": "ČRo Sever", "radio_liberec": "ČRo Sever - Liberec", "radio_regina": "ČRo Regina", "radior": "RadioR", "radio_blatna": "Rádio Otava", "radio_proglas": "Proglas", "ivysocina_stream_zs": "i-Vysočina", "tvbeskyd": "TV Beskyd", "cms_tv": "cms:tv", "panorama_tv": "Panorama TV", "jihoceska_televize": "Jihočeská televize", "tik_bohumin": "Tik Bohumín", "DorceltvHD": "Dorcel TV", "DorcelHD": "Dorcel XXX", "playboy": "Playboy TV", "radio_cro_pohoda": "ČRo Pohoda", "radio_jih": "Rádio Jih", "radio_jihlava": "Rádio Jihlava", "radio_free": "Free Rádio", "radio_jukej": "JuKej Radio", "radio_pigy_disko": "PiGy Disko Trysko", "radio_pigy_pisnicky": "PiGy Pohádkové písničky", "radio_pigy_pohadky": "PiGy Pohádky", "radio_z": "Radio Z", "radio_cas": "Radio Čas", "radio_dance": "Dance Rádio", "radio_hit_desitka": "Hitrádio Desítka", "radio_hitradio_80": "Hitradio Osmdesatka", "radio_hitradio_90": "Hitradio Devadesátka", "radio_hitradio_orion": "Hitradio Orion", "radio_blanik": "Rádio Blaník", "radio_rock_radio": "Rock Rádio", "radio_cro_sport": "ČRo Radiožurnál Sport", "radio_cro_zlin": "ČRo Zlín", "radio_cro_kv": "ČRo Karlovy Vary", "radio_color": "Radio Color", "radio_hey": "Radio Hey", "seejay": "SeeJay", "russia_channel1": "Pervij kanal", "dom_kino": "Dom Kino", "dom_kino_premium": "Dom Kino Premium", "vremya": "Vremya", "poehali": "Poekhali!", "muzika_pervogo": "Muzika Pervogo", "bobyor": "Bobyor", "telekanal_o": "O!", "telecafe": "Telecafe", "karousel": "Karusel", "x-mo": "X-mo", "brazzers": "Brazzers TV Europe", "leo": "Leo TV", "extasy": "Extasy", "privatetv": "Private HD", "realitykings": "Reality Kings", "true_amateurs": "True Amateurs", "babes_tv": "Babes TV", "redlight": "Redlight"}
-
-const timezone = `Europe/Prague`//set timezone according to 
-//const timeshift = getOffset(timezone);
-const days = 5;// Počet dní (1-15)
-const daysBack = 1;// Počet dní zpětně (0-7)
+const channelsPlusOne = config.get(`channelsPlusOne`);
+const timezone = config.get(`timezone`);
+const days = config.get(`days`);
+const daysBack = config.get(`daysBack`);
 const cacheFolder = `${__dirname}/cache`;
-//const cacheDays = 5; //how many days to keep cache
-const xmlFileName = `epg.xml`;
-//const genresMap = require(`./genres.json`);
+const xmlFileName = config.get(`xmlFileName`);
+let epgXml;
 
+//set logger
 const Logger = require(`./packages/Logger.js`);
-Logger.setSeverity(0); //  ["DEBUG","INFO","WARNING","ERROR"];
+Logger.setSeverity(config.get(`logLevel`))
 Logger.setLogPath(`./logger.log`,`./`);
 let log = Logger.getLogger("MAIN");
-
-
-//just a test
-//let channel = "nova"
-//let date = "2022-12-21"
-//let stv_p_id = "prima_krimi:20221222748ef6a9cfc135f7e85dcb7648a9c746"
-//http://felixtv.wz.cz/epg/stv.php?ch=" + stv_id + "&d=" + date_from
-
- //https://sledovanitv.cz/epg/event-new?eventId=prima_krimi:20221222748ef6a9cfc135f7e85dcb7648a9c746
-
-
-//req = requests.get("http://felixtv.wz.cz/epg/stv.php?ch=" + stv_id + "&d=" + date_from).json()["channels"]
-
-/*
-// Make a request for a user with a given ID
-axios.get(`http://felixtv.wz.cz/epg/stv.php?ch=${channel}&d=${date}`)
-  .then(function (response) {
-    // handle success
-    console.log(JSON.stringify(response.data));//we can parse some info including stv program id
-  })
-  .catch(function (error) {
-    // handle error
-    console.log(error);
-  })
-  .finally(function () {
-    // always executed
-  });
-*/
-  //we check for some default id, if we fid stv page to get csfd link
-
-
-  let epgXml;
   
-  main();
+  
+main();
 
   async function main(){
     //log.debug("genres: ", genresMap.genres);
@@ -118,7 +81,7 @@ axios.get(`http://felixtv.wz.cz/epg/stv.php?ch=${channel}&d=${date}`)
     log.info(`Channels: ${channelIds.length}`);
     log.info(`Days: ${days}`)
     log.info(`Days back: ${daysBack}`);
-    log.info(`${timezone} timezone\n`);// offset ${timeshift}`);
+    log.info(`${timezone} timezone\n`);
     await cleanCache(); //we clean cache files first...
     //add header to xml
     const xml = new XmlTv({
@@ -167,12 +130,15 @@ axios.get(`http://felixtv.wz.cz/epg/stv.php?ch=${channel}&d=${date}`)
       //let date = firstDay + x;
       let date = new Date(new Date().setDate(new Date().getDate()-daysBack + x)); //first date + loop
       let timeshift = getOffset(date, timezone); //we get and offset for specifies timezone
+      let offsetType = `+`;
+      if (timeshift < 0 ){
+        offsetType = `-`;
+      }
       let dateString = date.toISOString().split('T')[0];
       let tzString = await getTZString(timeshift);
       dayDiff++;//we add plus one for next loop...
       //log.info(`\n\n${dateString}`);
-      process.stdout.write(`\n\n${dateString} / offset ${getOffset(date, timezone)} hour(s)`);
-      //continue;
+      process.stdout.write(`\n\n${dateString} / offset ${offsetType}${timeshift} hour(s)`);
       //we loop throug all channels
       for (let i in channels){
         channel = channels[i];
@@ -188,8 +154,7 @@ axios.get(`http://felixtv.wz.cz/epg/stv.php?ch=${channel}&d=${date}`)
           //log.info("CT program... get xml");
           let channelCT = channelsCTMap[channel.id]
           let dateCT = `${dateString[8]}${dateString[9]}.${dateString[5]}${dateString[6]}.${dateString[0]}${dateString[1]}${dateString[2]}${dateString[3]}`;
-          
-          
+           
           //log.info(`${dateCT} ${channelCT}`);
           let channelXmlLink = `https://www.ceskatelevize.cz/services-old/programme/xml/schedule.php?user=test&date=${dateCT}&channel=${channelCT}`
   
@@ -962,32 +927,6 @@ function getOffset(date, timeZone){
   return (tzDate.getTime() - utcDate.getTime()) / (6e4 * 60);//remove *60 to get minutes instead
 }
 
-
-
-
-
-/*
-  // Make a request for a user with a given ID
-await axios.get(stv_p_link)
-  .then(function (response) {
-    // handle success
-  	stv_page = prettify(response.data);
-    console.log(prettify(response.data));//we can parse some info including stv program id
-  })
-  .catch(function (error) {
-    // handle error
-    console.log(error);
-  })
-  .finally(function () {
-    // always executed
-  });
-
-  console.log("we have stv page, lets use soup on it...")
-  let soup = await new JSSoup(stv_page);
-  console.log("soup", soup);
-  console.log("FIND", soup.find("main-menu-log"))
-  */
-//}
 
 
 

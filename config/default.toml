@@ -1,0 +1,20 @@
+# How many days to scrape from today
+days = 5
+
+# How many days in past to get
+daysBack = 1
+
+# Mujtv program IDs
+channelIds = ["ct1", "ct2", "ct24", "ctdecko", "ctart", "ct4sport", "nova", "novacinema", "fanda", "smichov", "nova_lady", "telka", "primafamily", "primacool", "prima_max", "primalove", "prima_krimi", "prima_show", "prima_star", "primazoom", "prima_news", "primacomedy", "barrandov", "barrandovplus", "kinobarrandov", "Seznam", "jojfamily", "nova_lady"]
+
+# Channels to add +1 channels
+channelsPlusOne = ["primafamily"]
+
+# Set timezone according to js timezone, we handle dst automatically...
+timezone = "Europe/Prague"
+
+# Final EPG xmltv filename
+xmlFileName = "epg.xml"
+
+# Log level - 0 = "DEBUG", 1 = "INFO", 2 = "WARNING", 3 = "ERROR"]
+logLevel = 0
